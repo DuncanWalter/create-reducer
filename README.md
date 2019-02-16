@@ -60,7 +60,7 @@ Reducers are both declarative and simple. This makes them desireable for state m
 
 The core of `create-reducer` is a function called `createReducer()`. `createReducer()` takes three parameters: a name for the described state, an initial state, and an object with handlers describing all the behaviors of the desired reducer. Notice that the first parameter of each handler is the current state and that the remaining parameters correspond to the parameters of the associated action creator. `createReducer()` returns a pair containing both the reducer function and the associated action creators.
 
-Here's an example of declaring the reducer from the above example using `createReducer()` in `typescript`:
+Here's an example of declaring the same reducer from the above example using `createReducer()` in `typescript`:
 
 ```javascript
 import { createReducer } from '@dwalter/create-reducer'
@@ -137,16 +137,16 @@ createReducer('foobar', [], {
 
 ## Questions
 
+#### Does `create-reducer` come with support for thunk and/or async actions?
+
+Yes and no? This library only deals with plain object actions. However, these actions can be dispatched freely from within other actionlike abstractions. these features have more to do with the dispatch function than with the reducers, so `create-reducer` opts not to deal with them internally.
+
+#### Why do the type signatures of the generated action creators include a `reducers` prop in the returned actions?
+
+That prop is there for compatibility with `@dwalter/spider-store`, which this library was originally spawned from. The `reducers` prop is in a prototype of the generated actions, so it won't show up in `redux-dev-tools` or break any behaviors of `redux`.
+
 #### Is it ever worth adding utility dependencies like this? How do I decide?
 
 Before I say anything, I found [this](https://medium.com/@dan_abramov/you-might-not-need-redux-be46360cf367) take on dependencies refreshing.
 
 Runtime dependencies are usually a hard no from me, particularly if I can replace it with a couple lines of my own code. In my opinion, things like `lodash` and `rambda` which attempt to add "standard library" utility won't save you time and will waste your bits. Tools with an explicit purpose and limited scope tend to be better. For examples, check out `classnames` and `typestyle`; both of these add a preferred way to complete a specific task with some additional benefit over doing it the "normal" way. I've attempted to make `create-reducer` a preferred way to create reducers in `typescript`, particularly in applications with granular slices of state. If that describes your app, then maybe `create-reducer` would be helpful for you.
-
-#### Why do the type signatures of the generated action creators include a `reducers` prop in the returned actions?
-
-That prop is there for compatibility with `@dwalter/spider-store`, which this library was originally spawned from. The `reducers` prop is in a prototype of the generated actions, so it won't show up in `redux-dev-tools` or break any of the other features of `redux`.
-
-#### Does `create-reducer` come with support for thunk and/or async actions?
-
-Yes and no? This library only deals with plain object actions. However, these actions can be dispatched freely from within other actionlike abstractions. these features have more to do with the dispatch function than with the reducers, so `create-reducer` opts not to deal with them internally.
