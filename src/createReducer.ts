@@ -2,7 +2,7 @@ const { assign, create, keys } = Object
 
 interface Action {
   type: string
-  reducers: Function[]
+  reducers: ((state: any, action: any) => any)[]
   payload: unknown
 }
 
