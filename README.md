@@ -53,7 +53,7 @@ function counter(state = 0, action: CounterAction) {
 Reducers are both declarative and simple. This makes them desireable for state management purposes. However, no pattern is perfect. Reducers have a few pain points- particularly when used with certain modern tools. `create-reducer` attempts to address three of these common problems in particular:
 
 - When using type systems, all actions need their types declared and put into a union in order for static analysis to work properly within reducers. This isn't an obscene amount of boilerplate, but it is a noticeable chore.
-- When using linting rules which disallow shadowed variable names, variables used in switch cases often need to be hoisted due to changes in seemingly unrelated code. When paired with a type system, this often also means manually typing the variable instead of relying on type inference. This makes variable naming harder and more tedious than it needs to be.
+- When using linting rules which disallow shadowed variable names, variables used in switch cases often need to be hoisted due to changes in seemingly unrelated code. When paired with a type system, this often also means manually typing the variable instead of relying on type inference.
 - Oftentimes, several reducers will have similar logic with slightly different action `type` properties. Naively, this means remaking the same logic in each reducer. There are several approaches to combat this duplication. Higher order reducers have been introduced for remaking similar logic with factory methods, though higher order reducers do not allow the resulting reducer logic to be extended in any way. Reducer composition is another potential workaround, but it is unclear how actions for composed reducers could be made reusable without introducing pitfalls and gotchas.
 
 ## Using `createReducer()`
@@ -133,6 +133,91 @@ createReducer('foobar', [], {
     /* Reducer Logic */
   },
 })
+```
+
+## Built in Mixins
+
+`create-reducer` ships with a few basic mixins out of the box. They are not special or unique mixins in any way, so they can be treeshaken from your bundle if not used.
+
+#### `settable<T>()`
+
+Adds a single action creator `set()` which accepts a new value for that piece of state.
+
+```javascript
+const [name, nameActions] = createReducer('name', 'Orolo', {
+  ...settable<string>()
+})
+
+nameActions.set('Erasmus')
+```
+
+#### `arraylike<T>()`
+
+Adds several array operations.
+
+```javascript
+const [numbers, numberActions] = createReducer('numbers', [] as number[], {
+  ...arraylike<number>()
+})
+
+numbers.add(1)
+
+numbers.add(2)
+
+numbers.set(0, 4)
+
+// supports negative indices
+numbers.set(-1, 4)
+
+// removes the first occurrence
+// of an element
+numbers.remove(4)
+
+// removes the element at a
+// certain index (also supports
+// negative indices)
+numbers.delete(-1)
+```
+
+#### `entityTable<T>()`
+
+Made for storing entity objects which have some sort of id (and typically shouldn't be represented twice in state). This type of normalization logic is handy both for making caches and for managing memory usage.
+
+```javascript
+interface Foo {
+  id: number
+  name: string
+}
+
+const [foos, fooActions] = createReducer('foo', {} as EntityTable<Foo>, {
+  // the table can be configured to hash
+  // however you need it to
+  ...entityTable<Foo>(foo => foo.id)
+})
+
+// add is the only way to add an entity to
+// the table
+fooActions.add({ id: 2, name: 'bill' })
+
+// increments the reference count to the
+// entity with id 2
+fooActions.add({ id: 2, name: 'bill' })
+
+// entity's reference count is decremented,
+// but it was referenced twice to it is not
+// removed
+fooActions.remove({ id: 2, name: 'bill' })
+
+// updates the entity with id 2
+fooActions.update({ id: 2, name: 'ted' })
+
+// entity's reference count is decremented,
+// and this time it is removed
+fooActions.remove({ id: 2, name: 'ted' })
+
+// does nothing because the entity is not
+// being tracked anymore
+fooActions.update({ id: 2, name: 'ted' })
 ```
 
 ## Questions

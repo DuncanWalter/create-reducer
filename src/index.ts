@@ -1,5 +1,5 @@
 export { createReducer } from './createReducer'
 
 export { settable } from './settable'
-export { entityTable } from './entityTable'
+export { entityTable, EntityTable } from './entityTable'
 export { arraylike } from './arraylike'

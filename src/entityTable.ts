@@ -1,10 +1,10 @@
-export type EntityState<Entity> = Record<string | number, [number, Entity]>
+export type EntityTable<Entity> = Record<string | number, [number, Entity]>
 
 export function entityTable<Entity>(
   getKey: (entity: Entity) => string | number,
 ) {
   return {
-    add(state: EntityState<Entity>, entity: Entity): EntityState<Entity> {
+    add(state: EntityTable<Entity>, entity: Entity): EntityTable<Entity> {
       const key = getKey(entity)
       const entityPair = state[key]
       if (entityPair) {
@@ -14,7 +14,7 @@ export function entityTable<Entity>(
         return { ...state, [key]: [1, entity] }
       }
     },
-    remove(state: EntityState<Entity>, entity: Entity): EntityState<Entity> {
+    remove(state: EntityTable<Entity>, entity: Entity): EntityTable<Entity> {
       const key = getKey(entity)
       const entityPair = state[key]
       if (entityPair) {
@@ -30,7 +30,7 @@ export function entityTable<Entity>(
         return state
       }
     },
-    update(state: EntityState<Entity>, entity: Entity): EntityState<Entity> {
+    update(state: EntityTable<Entity>, entity: Entity): EntityTable<Entity> {
       const key = getKey(entity)
       const entityPair = state[key]
       if (entityPair) {
