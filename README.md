@@ -58,7 +58,7 @@ Reducers are both declarative and simple. This makes them desireable for state m
 
 ## Using `createReducer()`
 
-The core of `create-reducer` is a function called `createReducer()`. `createReducer()` takes three parameters: a name for the described state, an initial state, and an object with handlers describing all the behaviors of the desired reducer. Notice that the first parameter of each handler is the current state and that the remaining parameters correspond to the parameters of the associated action creator. `createReducer()` returns a pair containing both the reducer function and the associated action creators.
+The core of `create-reducer` is a function called `createReducer()`. `createReducer()` takes three parameters: a prefix for generated actions, an initial state, and an object with handlers describing all the behaviors of the desired reducer. Notice that the first parameter of each handler is the current state and that the remaining parameters correspond to the parameters of the associated action creator. `createReducer()` returns a pair containing the reducer function and a collection of action creators in the same shape as the handler object passed in.
 
 Here's an example of declaring the same reducer from the above example using `createReducer()` in `typescript`:
 
@@ -82,7 +82,7 @@ Note that event though no actions are explicitly typed, `typescript` knows the c
 
 ## Custom Action Types
 
-When passed a string in the first parameter, `createReducer()` generates action types using the property names of the handlers as shown above. It is also possible to pass a function which accepts a handler name and returns an action type string if you need more control over the generated action types.
+When passed a string in the first parameter, `createReducer()` generates action types using the property names of the handlers as shown in the first example (`` `@${prefix}/${handlerName}` ``). It is also possible to pass a function which accepts a handler name and returns an action type string if you need more control over the generated action types.
 
 ## Reducer Mixins
 
@@ -148,7 +148,13 @@ const [name, nameActions] = createReducer('name', 'Orolo', {
   ...settable<string>()
 })
 
-nameActions.set('Erasmus')
+let state = name(undefined, {})
+
+function dispatch(action: Action){
+  state = name(state, action)
+}
+
+dispatch(nameActions.set('Erasmus'))
 ```
 
 #### `arraylike<T>()`
@@ -156,27 +162,33 @@ nameActions.set('Erasmus')
 Adds several array operations.
 
 ```javascript
-const [numbers, numberActions] = createReducer('numbers', [] as number[], {
+const [numbers, numberActions] = createReducer('numbers', [], {
   ...arraylike<number>()
 })
 
-numbers.add(1)
+let state = numbers(undefined, {})
 
-numbers.add(2)
+function dispatch(action: Action){
+  state = numbers(state, action)
+}
 
-numbers.set(0, 4)
+dispatch(numberActions.add(1))
+
+dispatch(numberActions.add(2))
+
+dispatch(numberActions.set(0, 4))
 
 // supports negative indices
-numbers.set(-1, 4)
+dispatch(numberActions.set(-1, 4))
 
 // removes the first occurrence
 // of an element
-numbers.remove(4)
+dispatch(numberActions.remove(4))
 
 // removes the element at a
 // certain index (also supports
 // negative indices)
-numbers.delete(-1)
+dispatch(numberActions.delete(-1))
 ```
 
 #### `entityTable<T>()`
@@ -189,35 +201,41 @@ interface Foo {
   name: string
 }
 
-const [foos, fooActions] = createReducer('foo', {} as EntityTable<Foo>, {
+const [foos, fooActions] = createReducer('foo', {}, {
   // the table can be configured to hash
   // however you need it to
   ...entityTable<Foo>(foo => foo.id)
 })
 
+let state = foos(undefined, {})
+
+function dispatch(action: Action){
+  state = foos(state, action)
+}
+
 // add is the only way to add an entity to
 // the table
-fooActions.add({ id: 2, name: 'bill' })
+dispatch(fooActions.add({ id: 2, name: 'bill' }))
 
 // increments the reference count to the
 // entity with id 2
-fooActions.add({ id: 2, name: 'bill' })
+dispatch(fooActions.add({ id: 2, name: 'bill' }))
 
 // entity's reference count is decremented,
 // but it was referenced twice to it is not
 // removed
-fooActions.remove({ id: 2, name: 'bill' })
+dispatch(fooActions.remove({ id: 2, name: 'bill' }))
 
 // updates the entity with id 2
-fooActions.update({ id: 2, name: 'ted' })
+dispatch(fooActions.update({ id: 2, name: 'ted' }))
 
 // entity's reference count is decremented,
 // and this time it is removed
-fooActions.remove({ id: 2, name: 'ted' })
+dispatch(fooActions.remove({ id: 2, name: 'ted' }))
 
 // does nothing because the entity is not
 // being tracked anymore
-fooActions.update({ id: 2, name: 'ted' })
+dispatch(fooActions.update({ id: 2, name: 'ted' }))
 ```
 
 ## Questions
@@ -229,9 +247,3 @@ Yes and no? This library only deals with plain object actions. However, these ac
 #### Why do the type signatures of the generated action creators include a `reducers` prop in the returned actions?
 
 That prop is there for compatibility with `@dwalter/spider-store`, which this library was originally spawned from. The `reducers` prop is in a prototype of the generated actions, so it won't show up in `redux-dev-tools` or break any behaviors of `redux`.
-
-#### Is it ever worth adding utility dependencies like this? How do I decide?
-
-Before I say anything, I found [this](https://medium.com/@dan_abramov/you-might-not-need-redux-be46360cf367) take on dependencies refreshing.
-
-Runtime dependencies are usually a hard no from me, particularly if I can replace it with a couple lines of my own code. In my opinion, things like `lodash` and `rambda` which attempt to add "standard library" utility won't save you time and will waste your bits. Tools with an explicit purpose and limited scope tend to be better. For examples, check out `classnames` and `typestyle`; both of these add a preferred way to complete a specific task with some additional benefit over doing it the "normal" way. I've attempted to make `create-reducer` a preferred way to create reducers in `typescript`, particularly in applications with granular slices of state. If that describes your app, then maybe `create-reducer` would be helpful for you.

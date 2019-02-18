@@ -17,6 +17,12 @@ interface Handler<State = any, Payload extends any[] = any[]> {
   (state: State, ...payload: Payload): State
 }
 
+type ConfigState<Config extends ReducerConfig> = Config extends ReducerConfig<
+  infer State
+>
+  ? State
+  : never
+
 type ActionCreators<State, Config extends ReducerConfig<State>> = {
   [K in keyof Config]: Config[K] extends (
     state: State,
@@ -39,11 +45,11 @@ function defaultName(prefix: string) {
  * @param initialState starting state of the reducer
  * @param config reducer behaviors for actions
  */
-export function createReducer<State, Config extends ReducerConfig<State>>(
+export function createReducer<Config extends ReducerConfig<any>>(
   name: string | ((name: string) => string),
-  initialState: State,
+  initialState: ConfigState<Config>,
   config: Config,
-): [Reducer<State>, ActionCreators<State, Config>] {
+): [Reducer<ConfigState<Config>>, ActionCreators<ConfigState<Config>, Config>] {
   const reducers = [reducer]
 
   let typeName: (name: string) => string
@@ -53,7 +59,7 @@ export function createReducer<State, Config extends ReducerConfig<State>>(
     typeName = defaultName(name)
   }
 
-  const actions = {} as ActionCreators<State, Config>
+  const actions = {} as ActionCreators<ConfigState<Config>, Config>
   const handlerKeys = {} as { [actionType: string]: string }
 
   const baseAction = Object.create(null, {

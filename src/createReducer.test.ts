@@ -1,5 +1,6 @@
 import { createReducer } from '.'
 import { settable } from './settable'
+import { entityTable } from './entityTable'
 
 test('Settable reducer behavior creates settable state', () => {
   const [reducer, actions] = createReducer('settable', 0, {
@@ -17,4 +18,13 @@ test('Settable reducer behavior creates settable state', () => {
   const action = actions.set(4)
 
   expect(action.type).toBe('@settable/set')
+})
+
+test('State types are inferred from configs', () => {
+  const initial = {}
+  const [, actions] = createReducer('foo', initial, {
+    ...entityTable<number>(n => n),
+  })
+
+  actions.add(6)
 })

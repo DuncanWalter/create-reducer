@@ -1,4 +1,7 @@
-export type EntityTable<Entity> = Record<string | number, [number, Entity]>
+export type EntityTable<Entity> = Record<
+  string | number,
+  { lock: number; entity: Entity }
+>
 
 export function entityTable<Entity>(
   getKey: (entity: Entity) => string | number,
@@ -8,23 +11,38 @@ export function entityTable<Entity>(
       const key = getKey(entity)
       const entityPair = state[key]
       if (entityPair) {
-        const [semaphore, entity] = entityPair
-        return { ...state, [key]: [semaphore + 1, entity] }
+        const { lock, entity } = entityPair
+        return { ...state, [key]: { lock: lock + 1, entity } }
       } else {
-        return { ...state, [key]: [1, entity] }
+        return { ...state, [key]: { lock: 1, entity } }
       }
     },
     remove(state: EntityTable<Entity>, entity: Entity): EntityTable<Entity> {
       const key = getKey(entity)
       const entityPair = state[key]
       if (entityPair) {
-        const [semaphore, entity] = entityPair
-        if (semaphore == 1) {
+        const { lock, entity } = entityPair
+        if (lock == 1) {
           const newState = { ...state }
           delete newState[key]
           return newState
         } else {
-          return { ...state, [key]: [semaphore - 1, entity] }
+          return { ...state, [key]: { lock: lock - 1, entity } }
+        }
+      } else {
+        return state
+      }
+    },
+    delete(state: EntityTable<Entity>, key: string | number) {
+      const entityPair = state[key]
+      if (entityPair) {
+        const { lock, entity } = entityPair
+        if (lock == 1) {
+          const newState = { ...state }
+          delete newState[key]
+          return newState
+        } else {
+          return { ...state, [key]: { lock: lock - 1, entity } }
         }
       } else {
         return state
@@ -34,8 +52,8 @@ export function entityTable<Entity>(
       const key = getKey(entity)
       const entityPair = state[key]
       if (entityPair) {
-        const [semaphore] = entityPair
-        return { ...state, [key]: [semaphore, entity] }
+        const { lock } = entityPair
+        return { ...state, [key]: { lock, entity } }
       } else {
         return state
       }
