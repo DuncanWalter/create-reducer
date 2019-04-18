@@ -1,6 +1,6 @@
 # @dwalter/create-reducer
 
-`create-reducer` is a tiny (1kb) utility for quickly declaring strongly typed, reusable reducer logic.
+`create-reducer` is a tiny (1kb) utility for declaring strongly typed, reusable reducer logic. If you know [robodux](https://github.com/neurosnap/robodux), `create-reducer` will feel like a variation on a familiar theme.
 
 ## What is a Reducer?
 
