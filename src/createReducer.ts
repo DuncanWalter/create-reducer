@@ -50,6 +50,22 @@ export function createReducer<Config extends ReducerConfig<any>>(
   initialState: ConfigState<Config>,
   config: Config,
 ): [Reducer<ConfigState<Config>>, ActionCreators<ConfigState<Config>, Config>] {
+  const reducerName = typeof name === 'string' ? name : name.name
+
+  function reducer(state = initialState, action: any) {
+    const handlerKey = handlerKeys[action.type]
+    if (!handlerKey) {
+      return state
+    }
+    const handler = config[handlerKey]
+    if (!handler) {
+      return state
+    }
+    return handler(state, ...action.payload)
+  }
+
+  Object.defineProperty(reducer, 'name', { value: reducerName })
+
   const reducers = [reducer]
 
   let typeName: (name: string) => string
@@ -71,18 +87,6 @@ export function createReducer<Config extends ReducerConfig<any>>(
     actions[key] = function(...payload: any) {
       return assign(create(baseAction), { type: typeName(key), payload })
     } as any
-  }
-
-  function reducer(state = initialState, action: any) {
-    const handlerKey = handlerKeys[action.type]
-    if (!handlerKey) {
-      return state
-    }
-    const handler = config[handlerKey]
-    if (!handler) {
-      return state
-    }
-    return handler(state, ...action.payload)
   }
 
   return [reducer, actions]
