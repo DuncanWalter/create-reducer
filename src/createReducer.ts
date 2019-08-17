@@ -32,7 +32,12 @@ type ActionCreators<State, Config extends ReducerConfig<State>> = {
     : never
 }
 
-function defaultName(prefix: string) {
+interface ActionableReducer<Config extends ReducerConfig<any>>
+  extends Reducer<ConfigState<Config>> {
+  actions: ActionCreators<ConfigState<Config>, Config>
+}
+
+function defaultNamer(prefix: string) {
   return function(name: string) {
     return `@${prefix}/${name}`
   }
@@ -49,10 +54,10 @@ export function createReducer<Config extends ReducerConfig<any>>(
   name: string | ((name: string) => string),
   initialState: ConfigState<Config>,
   config: Config,
-): [Reducer<ConfigState<Config>>, ActionCreators<ConfigState<Config>, Config>] {
+): ActionableReducer<Config> {
   const reducerName = typeof name === 'string' ? name : name.name
 
-  function reducer(state = initialState, action: any) {
+  const reducer = function(state = initialState, action: any) {
     const handlerKey = handlerKeys[action.type]
     if (!handlerKey) {
       return state
@@ -62,9 +67,7 @@ export function createReducer<Config extends ReducerConfig<any>>(
       return state
     }
     return handler(state, ...action.payload)
-  }
-
-  Object.defineProperty(reducer, 'name', { value: reducerName })
+  } as ActionableReducer<Config>
 
   const reducers = [reducer]
 
@@ -72,11 +75,11 @@ export function createReducer<Config extends ReducerConfig<any>>(
   if (typeof name === 'function') {
     typeName = name
   } else {
-    typeName = defaultName(name)
+    typeName = defaultNamer(name)
   }
 
-  const actions = {} as ActionCreators<ConfigState<Config>, Config>
   const handlerKeys = {} as { [actionType: string]: string }
+  const actions = {} as any
 
   const baseAction = Object.create(null, {
     reducers: { value: reducers },
@@ -84,10 +87,15 @@ export function createReducer<Config extends ReducerConfig<any>>(
 
   for (let key of keys(config)) {
     handlerKeys[typeName(key)] = key
-    actions[key] = function(...payload: any) {
+    actions[key] = function(...payload: any[]) {
       return assign(create(baseAction), { type: typeName(key), payload })
-    } as any
+    }
   }
 
-  return [reducer, actions]
+  Object.defineProperties(reducer, {
+    name: { value: reducerName, enumerable: false },
+    actions: { value: actions, enumerable: false },
+  })
+
+  return reducer
 }
